@@ -28,7 +28,7 @@ const List = ({
     data: {
       type: "LIST",
       listId: list.id,
-      index,   // 🔥 REQUIRED
+      index,
     },
   });
 
@@ -39,9 +39,9 @@ const List = ({
     isDragging
   } = useSortable({
     id: `list-${list.id}`,
-    index,
+    // index,
     data: {
-      type: "LIST",
+      // type: "LIST",
       listId: list.id,
       index,
     },
@@ -54,6 +54,8 @@ const List = ({
     } catch (err) {
       console.error(err);
     }
+
+    refreshBoard();
   };
 
   const deleteList = async () => {
@@ -62,10 +64,11 @@ const List = ({
 
     try {
       await API.delete(`/lists/${list.id}`);
-      refreshBoard();
     } catch (err) {
       console.error(err);
     }
+
+    refreshBoard();
   };
 
   const handleAddCard = async () => {

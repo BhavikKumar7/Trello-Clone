@@ -14,12 +14,13 @@ const Board = ({ board }) => {
   const [filterDue, setFilterDue] = useState("");
   const [membersList, setMembersList] = useState([]);
 
+  const [dragMeta, setDragMeta] = useState(null);
+
   const moveCardLocally = (lists, cardId, sourceListId, destinationListId, newPosition) => {
-    const newLists = structuredClone(lists); // 🔥 important (deep copy)
+    const newLists = structuredClone(lists);
 
     let movedCard = null;
 
-    // remove
     for (const list of newLists) {
       if (list.id === Number(sourceListId)) {
         const index = list.cards.findIndex(c => c.id == cardId);
@@ -32,10 +33,8 @@ const Board = ({ board }) => {
 
     if (!movedCard) return newLists;
 
-    // 🔥 update list_id
     movedCard.list_id = Number(destinationListId);
 
-    // insert
     for (const list of newLists) {
       if (list.id === Number(destinationListId)) {
         list.cards.splice(newPosition - 1, 0, movedCard);
@@ -46,21 +45,35 @@ const Board = ({ board }) => {
     return newLists;
   };
 
+  const handleDragStart = (event) => {
+    const { operation } = event;
+    const source = operation.source;
+
+    if (source.id.startsWith("card-")) {
+      setDragMeta({
+        cardId: source.id.replace("card-", ""),
+        sourceListId: source.data?.rawListId,
+      });
+    }
+  };
+
   const handleDragEnd = async (event) => {
     const { operation } = event;
+
+    if (!dragMeta) return;
 
     if (!operation.target) return;
 
     const source = operation.source;
     const target = operation.target;
 
-    const cardId = source.id.replace("card-", "");
-    const sourceListId = source.data?.rawListId;
+    const cardId = dragMeta?.cardId;
+    const sourceListId = dragMeta?.sourceListId;
 
     let destinationListId;
     let newPosition;
 
-    // 🔥 LIST DROP
+    // LIST DROP
     if (operation.source.id.startsWith("list-")) {
       setLists((prev) => {
         const updated = prev.map((list, index) => ({
@@ -78,33 +91,32 @@ const Board = ({ board }) => {
         return updated;
       });
 
-      try {
-        await API.patch("/lists/reorder", {
-          lists: updatedLists,
-        });
-      } catch (err) {
-        console.error(err);
-        refreshBoard(); // fallback
-      }
-
       return; // stop card logic
     }
 
     if (target.id.startsWith("card-")) {
       destinationListId = target.data?.rawListId;
       newPosition = target.data?.index + 1;
-    } else {
+    } else if (target.id.startsWith("list-")) {
       destinationListId = target.id.replace("list-", "");
       const destList = lists.find(l => l.id == destinationListId);
       newPosition = (destList?.cards?.length || 0) + 1;
     }
 
-    // 🔥 OPTIMISTIC UPDATE (NO FLICKER)
+    // 🚫 DO NOTHING if no actual move
+    if (
+      sourceListId == destinationListId &&
+      source.data?.index + 1 === newPosition
+    ) {
+      setDragMeta(null);
+      return;
+    }
+
+    // ✅ ONLY MOVE if position actually changed
     setLists(prev =>
       moveCardLocally(prev, cardId, sourceListId, destinationListId, newPosition)
     );
 
-    // 🔥 BACKEND CALL (silent)
     try {
       await API.patch("/cards/move", {
         cardId,
@@ -112,10 +124,13 @@ const Board = ({ board }) => {
         destinationListId,
         newPosition,
       });
-    } catch (err) {
-      console.error(err);
-      refreshBoard(); // fallback if failed
     }
+    catch (err) {
+      console.error("MOVE ERROR:", err.response?.data || err.message);
+      refreshBoard();
+    }
+
+    setDragMeta(null);
   };
 
   let lastMove = null;
@@ -166,7 +181,8 @@ const Board = ({ board }) => {
 
       if (target.id.startsWith("card-")) {
         destinationListId = target.data?.rawListId;
-        newPosition = target.data?.index;
+        // newPosition = target.data?.index;
+        newPosition = target.data?.index + 1;
       }
 
       else if (target.id.startsWith("list-")) {
@@ -180,14 +196,14 @@ const Board = ({ board }) => {
 
       const key = `card-${cardId}-${destinationListId}-${newPosition}`;
 
-      // ❌ prevent flicker
+      // prevent flicker
       if (lastMove === key) return;
       lastMove = key;
 
-      // ❌ prevent same position update
+      // prevent same position update
       if (
         sourceListId == destinationListId &&
-        source.data?.index === newPosition
+        source.data?.index + 1 === newPosition
       )
         return;
 
@@ -197,7 +213,7 @@ const Board = ({ board }) => {
           cardId,
           sourceListId,
           destinationListId,
-          newPosition + 1
+          newPosition
         )
       );
     }
@@ -255,7 +271,7 @@ const Board = ({ board }) => {
   };
 
   return (
-    <DragDropProvider onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
+    <DragDropProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
       <div className="h-screen p-3 sm:p-6 text-white bg-[#0079bf] overflow-hidden">
 
         {/* HEADER */}

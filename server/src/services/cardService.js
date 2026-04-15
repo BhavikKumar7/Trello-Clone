@@ -34,33 +34,55 @@ export const moveCard = ({ cardId, sourceListId, destinationListId, newPosition 
     db.query(getCardQuery, [cardId], (err, result) => {
       if (err) return reject(err);
 
+      if (!result || result.length === 0) {
+        return reject(new Error("Card not found"));
+      }
+
       const oldPosition = result[0].position;
 
       if (sourceListId === destinationListId) {
-        // 🔹 SAME LIST MOVE
 
-        const shiftQuery = `
-          UPDATE cards
-          SET position = position + 1
-          WHERE list_id = ? AND position >= ?
-       `;
+        // ✅ prevent unnecessary update
+        if (oldPosition === newPosition) return resolve();
 
-        db.query(shiftQuery, [sourceListId, newPosition], (err) => {
+        let shiftQuery;
+        let values;
+
+        if (newPosition > oldPosition) {
+          // 🔽 moving DOWN
+          shiftQuery = `
+      UPDATE cards
+      SET position = position - 1
+      WHERE list_id = ? AND position > ? AND position <= ?
+    `;
+          values = [sourceListId, oldPosition, newPosition];
+        } else {
+          // 🔼 moving UP
+          shiftQuery = `
+      UPDATE cards
+      SET position = position + 1
+      WHERE list_id = ? AND position >= ? AND position < ?
+    `;
+          values = [sourceListId, newPosition, oldPosition];
+        }
+
+        db.query(shiftQuery, values, (err) => {
           if (err) return reject(err);
 
           const updateQuery = `
-            UPDATE cards
-            SET position = ?
-            WHERE id = ?
-          `;
+      UPDATE cards
+      SET position = ?
+      WHERE id = ?
+    `;
 
           db.query(updateQuery, [newPosition, cardId], (err) => {
             if (err) return reject(err);
             resolve();
           });
         });
+      }
 
-      } else {
+      else {
         // 🔥 DIFFERENT LIST MOVE
 
         // Step 1: Fix source list (REMOVE GAP)

@@ -11,10 +11,13 @@ const Card = ({ card, index, refreshBoard }) => {
 
   const { ref, transform, transition, isDragging } = useSortable({
     id: `card-${card.id}`,
-    index,
     data: {
       rawListId: card.list_id,
       index,
+    },
+    activationConstraint: {
+      delay: 150,
+      tolerance: 5,
     },
   });
 
@@ -51,9 +54,8 @@ const Card = ({ card, index, refreshBoard }) => {
         ref={ref}
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
-        className={`p-2 sm:p-3 rounded-md shadow-sm flex justify-between items-start gap-2 group transition ${
-          isCompleted ? "bg-green-200" : "bg-white hover:bg-gray-100"
-        }`}
+        className={`p-2 sm:p-3 rounded-md shadow-sm flex justify-between items-start gap-2 group transition ${isCompleted ? "bg-green-200" : "bg-white hover:bg-gray-100"
+          }`}
         style={{
           transform: transform
             ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
@@ -91,9 +93,8 @@ const Card = ({ card, index, refreshBoard }) => {
 
             {/* TITLE */}
             <span
-              className={`text-black text-sm sm:text-base break-words ${
-                isCompleted ? "line-through opacity-70" : ""
-              }`}
+              className={`text-black text-sm sm:text-base break-words ${isCompleted ? "line-through opacity-70" : ""
+                }`}
             >
               {card.title}
             </span>
@@ -108,13 +109,12 @@ const Card = ({ card, index, refreshBoard }) => {
 
               return (
                 <span
-                  className={`text-[10px] sm:text-xs px-2 py-0.5 rounded w-fit ${
-                    due < today
-                      ? "bg-red-100 text-red-600"
-                      : due.getTime() === today.getTime()
+                  className={`text-[10px] sm:text-xs px-2 py-0.5 rounded w-fit ${due < today
+                    ? "bg-red-100 text-red-600"
+                    : due.getTime() === today.getTime()
                       ? "bg-yellow-100 text-yellow-700"
                       : "bg-green-100 text-green-700"
-                  }`}
+                    }`}
                 >
                   📅 {due.toLocaleDateString("en-GB")}
                 </span>
@@ -137,28 +137,27 @@ const Card = ({ card, index, refreshBoard }) => {
 
         {/* ✅ ACTIONS (ISOLATED) */}
         <div
-          className={`flex gap-1 sm:gap-2 ${
-            showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-          } transition`}
+          className={`flex gap-1 sm:gap-2 ${showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            } transition`}
         >
           <Edit2
             size={14}
             className="cursor-pointer text-gray-600 hover:text-blue-600"
-            onPointerDown={(e) => {e.stopPropagation(); setOpenModal(true);}}
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenModal(true);
-            }}
+            onPointerDown={(e) => { e.stopPropagation(); setOpenModal(true); }}
+          // onClick={(e) => {
+          //   e.stopPropagation();
+          //   setOpenModal(true);
+          // }}
           />
 
           <Trash2
             size={14}
             className="cursor-pointer text-gray-600 hover:text-red-600"
-            onPointerDown={(e) => {e.stopPropagation(); deleteCard();}}
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteCard();
-            }}
+            onPointerDown={(e) => { e.stopPropagation(); deleteCard(); }}
+          // onClick={(e) => {
+          //   e.stopPropagation();
+          //   deleteCard();
+          // }}
           />
         </div>
       </div>

@@ -4,14 +4,17 @@ import Board from "../components/Board/Board";
 
 const BoardPage = ({ boardId, refreshFlag }) => {
   const [board, setBoard] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ MOVE OUTSIDE
   const fetchBoard = async () => {
     try {
+      setLoading(true);
       const res = await API.get(`/boards/${boardId}`);
       setBoard(res.data);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -19,14 +22,31 @@ const BoardPage = ({ boardId, refreshFlag }) => {
     if (boardId) fetchBoard();
   }, [boardId, refreshFlag]);
 
-  if (!board)
+  // ✅ LOADING UI
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-full px-4 text-center">
-        <div className="p-5 text-base sm:text-lg md:text-xl font-semibold">
-          Loading...
+      <div className="flex items-center justify-center h-full">
+        <div className="flex gap-4 overflow-x-auto p-4 w-full">
+          {[1, 2, 3].map((_, i) => (
+            <div
+              key={i}
+              className="min-w-[250px] h-[300px] bg-gray-200 rounded-lg animate-pulse"
+            />
+          ))}
         </div>
       </div>
     );
+  }
+
+  if (!board) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-lg font-semibold text-gray-500">
+          No board found
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full overflow-auto">

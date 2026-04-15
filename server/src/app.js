@@ -8,12 +8,20 @@ import cors from "cors";
 
 const app = express();
 
-app.use(cors({
-  origin: [
+const allowedOrigins = [
     "http://localhost:5173",
-    "https://trello-clone-three-jet.vercel.app/"
-  ],
-  credentials: true
+    "https://trello-clone-three-jet.vercel.app"
+];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("CORS not allowed"));
+        }
+    },
+    credentials: true
 }));
 
 app.use(express.json());

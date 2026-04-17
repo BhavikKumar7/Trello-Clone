@@ -1,18 +1,19 @@
 import dotenv from "dotenv";
-dotenv.config({ path: "./.env" }); // still fine to keep
+dotenv.config({ path: "./.env" });
 
 import app from "./src/app.js";
 import db from "./src/config/db.js";
 
-db.connect((err) => {
+const PORT = process.env.PORT || 5000;
+
+db.getConnection((err, connection) => {
   if (err) {
-    console.error("DB Connection Failed:", err);
+    console.error("DB Pool Connection Failed:", err);
   } else {
-    console.log("MySQL Connected");
+    console.log("MySQL Pool Connected");
+    connection.release();
   }
 });
-
-const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
